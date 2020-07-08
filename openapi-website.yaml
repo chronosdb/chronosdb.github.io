@@ -1,0 +1,3818 @@
+openapi: 3.0.0
+info:
+  description: ChronosDB time series database API
+  version: '0.1'
+  title: ChronosDB swagger
+  termsOfService: 'http://chronosdb.io/terms/'
+  contact:
+    email: apiteam@chronosdb.io
+  license:
+    name: commercial license
+servers:
+  - url: 'http://localhost:9090/api'
+    description: The development API server
+    variables:
+      basePath:
+        default: v1.0
+  - url: 'https://tshub-dev.appspot.com:{port}/{basePath}'
+    description: The development API server
+    variables:
+      tenent:
+        default: demo
+        description: this value is assigned by the service provider
+      port:
+        enum:
+          - '443'
+        default: '443'
+      basePath:
+        default: api
+  - url: 'https://tshub.io:443/api'
+    description: The production server
+tags:
+  - name: space
+    description: Access to spaces
+  - name: collection
+    description: Access to collections
+  - name: time series
+    description: Access to time series
+  - name: time series data
+    description: Access to time series data
+  - name: vintage
+    description: Access to vintage
+  - name: user
+    description: Operations on user
+  - name: group
+    description: Access to group via namespace
+  - name: annotations
+    description: Time Series Annotations
+  - name: api key
+    description: API Keys management
+paths:
+  /space:
+    get:
+      tags:
+        - space
+      summary: list spaces
+      description: ''
+      operationId: app.api.space.get_list
+      parameters:
+        - $ref: '#/components/parameters/query'
+      responses:
+        '200':
+          description: list of spaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Space'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    post:
+      tags:
+        - space
+      summary: Create a new space
+      description: Create a new space
+      operationId: app.api.space.post
+      requestBody:
+        description: Space definition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Space'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '405':
+          description: Invalid input
+        '409':
+          description: Space already exists
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/space/{space_name}':
+    get:
+      tags:
+        - space
+      summary: Get space details
+      description: Get space details
+      operationId: app.api.space.get
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Space already exists
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    delete:
+      tags:
+        - space
+      summary: Delete a space
+      description: Delete a space
+      operationId: app.api.space.delete
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+      responses:
+        '200':
+          description: deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    put:
+      tags:
+        - space
+      summary: Update an existing space
+      description: ''
+      operationId: app.api.space.put
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Space'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        '400':
+          description: Invalid space name supplied
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Space not found
+        '405':
+          description: Validation exception
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/space/{space_name}/history':
+    get:
+      tags:
+        - space
+      summary: Get historical values for space details
+      description: Get historical values for space details
+      operationId: app.api.space.name_history
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/realStart'
+        - $ref: '#/components/parameters/realEnd'
+      responses:
+        '200':
+          description: List of space_id's which were associated with a given space name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/space_id'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Space not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/space/{space_name}/members':
+    post:
+      tags:
+        - space
+      summary: Add a space member
+      description: Add a space member
+      operationId: app.api.space.add_member
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceMemberPost'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/space/{space_name}/members/{type}/{memberName}':
+    delete:
+      tags:
+        - space
+      summary: Delete a space member
+      description: Delete a space member
+      operationId: app.api.space.delete_member
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/subject_type_path'
+        - name: memberName
+          in: path
+          description: username or groupname
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/collection/{space_name}':
+    get:
+      tags:
+        - collection
+      summary: list collections
+      description: ''
+      operationId: app.api.collection.get_list
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CollectionSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    post:
+      tags:
+        - collection
+      summary: Create a new collection
+      description: Create a new collection
+      operationId: app.api.collection.post
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+      requestBody:
+        description: Definition of collection
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '405':
+          description: Invalid input
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/collection/{space_name}/{coll_name}':
+    get:
+      tags:
+        - collection
+      summary: Get collection details
+      description: Get collection details
+      operationId: app.api.collection.get
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    delete:
+      tags:
+        - collection
+      summary: Delete a collection
+      description: Delete a space
+      operationId: app.api.collection.delete
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      responses:
+        '200':
+          description: deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    put:
+      tags:
+        - collection
+      summary: Update an existing collection
+      description: Update an existing collection
+      operationId: app.api.collection.put
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      requestBody:
+        description: ok
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+        '400':
+          description: Invalid collection name supplied
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection not found
+        '405':
+          description: Validation exception
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/collection/{space_name}/{coll_name}/history':
+    get:
+      tags:
+        - collection
+      summary: Retrieve historical values of collection details
+      description: Retrieve historical values of collection details
+      operationId: app.api.collection.name_history
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/realStart'
+        - $ref: '#/components/parameters/realEnd'
+      responses:
+        '200':
+          description: >-
+            list of coll_id's which at some point were associated with a given
+            collection name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/coll_id'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/timeseries/{space_name}/{coll_name}':
+    post:
+      tags:
+        - time series
+      summary: Create a new time series
+      description: ''
+      operationId: app.api.timeseries.post
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      requestBody:
+        description: Time series parameters. dtype and freq are required
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeSeries'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Time Series Not Found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    get:
+      tags:
+        - time series
+      summary: List time series in a collection
+      description: List time series in a collection
+      operationId: app.api.timeseries.get_list
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeSeriesSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Time Series Not Found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/timeseries/{space_name}/{coll_name}/{name}':
+    get:
+      tags:
+        - time series
+      summary: Retrieve time series info
+      description: ''
+      operationId: app.api.timeseries.get
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Time Series Not Found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    put:
+      tags:
+        - time series
+      summary: Update existing time series info
+      description: Update existing time series info
+      operationId: app.api.timeseries.put
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/name'
+      requestBody:
+        description: Time series updated info
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeSeriesUpdate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Time Series Not Found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    delete:
+      tags:
+        - time series
+      summary: Delete a time series
+      description: delete time series
+      operationId: app.api.timeseries.delete
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/name'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Time Series Not Found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/timeseries/{space_name}/{coll_name}/{name}/history':
+    get:
+      tags:
+        - time series
+      summary: retrive historical values
+      description: ''
+      operationId: app.api.timeseries.name_history
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/name'
+        - $ref: '#/components/parameters/realStart'
+        - $ref: '#/components/parameters/realEnd'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: >-
+                  list of tsid's which were, at some point, associated with a
+                  given timeseries name in a given collection
+                type: array
+                items:
+                  $ref: '#/components/schemas/tsid'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  /data:
+    get:
+      tags:
+        - time series data
+      summary: Retrieve time series data
+      description: Retrieve time series data
+      operationId: app.api.timeseries_data.get
+      parameters:
+        - name: series
+          description: list of time series identifiers
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/TSIList'
+        - name: periodStart
+          description: |
+            start of time index range, format depends on the freq requested
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: periodEnd
+          description: end of time index range
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: transform
+          description: |
+            Time series transformation
+            * `none` - as is
+            * `diff` - Use the last value of the time period.
+            * `rdiff` - relative diff, i.e. % changes
+            * `log` - natural log
+            * `ldiff` - log diff, i.e. % changes
+            * `norm` - normalized to 100
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - diff
+              - rdiff
+              - log
+              - ldiff
+              - norm
+        - name: freq
+          description: frequency of returned series
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: toLowerMethod
+          description: >
+            Method of converting to lower frequency.
+
+            * `auto` - Determine the method based on the series classification.
+
+            * `last` - Use the last value of the time period.
+
+            * `first` - Use the first value of the time period.
+
+            * `sum` - Aggregate the values of the time period. e.g. for flow
+            type of variables
+
+            * `pch` - Aggregate the percentage change over the period.
+
+            * `mix` - Use the highest value in the time period.
+
+            * `min` - Use the lowest value of the time period.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - auto
+              - last
+              - first
+              - sumw
+              - pch
+              - max
+              - min
+            default: auto
+        - name: toHigherMethod
+          description: >
+            Method of converting to higher frequency.
+
+            * `auto` - Determine the method based on the series classification.
+
+            * `same` - Use the same value for the whole period.
+
+            * `dist` - Divide equally over the time period.
+
+            * `pch` - Distribute the percentage change over the period.
+
+            * `linear` - Use a linear interpolation of the values from this to
+            the next period.
+
+            * `first` - Use the value for the first value of the period.
+
+            * `quad` - Use quadratic interpolation to distribute the value over
+            the period.
+
+            * `cube` - Use a cubic interpolation of the values from this to the
+            next period.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - auto
+              - same
+              - dist
+              - pch
+              - linear
+              - first
+              - quad
+              - cube
+            default: auto
+        - name: missingMethod
+          description: >
+            Method of filling in any missing values.
+
+            * `none` - Do not fill in missing values. They will remain NaN in
+            the value vector.
+
+            * `auto` - Determine the method based on the series classification.
+
+            * `previous` - Use the previous non-missing value.
+
+            * `zero` - Use the value zero.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - none
+              - auto
+              - previous
+              - zero
+            default: none
+        - name: merge
+          description: Should merge time series
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: realtime
+          description: real time as of which values were valid
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: vintage
+          description: vintage tag used to identify real time when series was written.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: output
+          description: output type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - json
+              - csv
+              - excel
+            default: json
+        - name: outputIndexType
+          description: >-
+            | format of output type * `auto` depending on output, * `string`
+            string represenation as in * `epoch` integers specifying number of
+            ms from unix epoch * `ISO` ISO8601 format 2008-09-15T15:53:00
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - auto
+              - epoch
+              - string
+              - ISO
+            default: epoch
+        - name: outputIndexFormat
+          description: format of output type
+          in: query
+          required: false
+          schema:
+            type: string
+            example: '%Y-Q%Q'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SingleTimeSeriesData'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/TSNotFoundError'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    put:
+      tags:
+        - time series data
+      summary: Save observations
+      description: Save observations of time series
+      operationId: app.api.timeseries_data.put
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      requestBody:
+        description: time series data
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SingleTimeSeriesData'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/TSNotFoundError'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    delete:
+      tags:
+        - time series data
+      summary: Delete observations
+      description: Delete observations from a time series
+      operationId: app.api.timeseries_data.delete
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/names'
+        - name: index
+          description: time index
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              oneOf:
+                - type: integer
+                - type: string
+              $ref: '#/components/schemas/AnyValue'
+        - name: format
+          description: >
+            Format of data time index
+
+            * `string` a string represenation specific to each index type, e.g.
+            2000-01 for monthly index.
+
+            * `iso` a string with iso representation of datetime ''
+
+            * `s`   a number of seconds from unix epoch 1970-01-01
+
+            * `ms`  a number of milliseconds from unix epoch 1970-01-01
+
+            * `us`  a number of microseconds from unix epoch 1970-01-01
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - string
+              - iso
+              - s
+              - ms
+              - us
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/TSNotFoundError'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/vintage/{space_name}/{coll_name}':
+    get:
+      tags:
+        - vintage
+      summary: List vintage tags in a collection
+      description: List vintage tags in a collection
+      operationId: app.api.vintages.get_list
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/tsid_optional'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VintageSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space or collection not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/vintage/{space_name}/{coll_name}/{name}':
+    get:
+      tags:
+        - vintage
+      summary: Retrieve a vintage tag with metadata
+      description: Retrieve a vintage tag with metadata
+      operationId: app.api.vintages.get
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - name: name
+          description: vintage tag
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: meta
+          description: should include vintage metadata
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vintage'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space or collection or tag not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    put:
+      tags:
+        - vintage
+      summary: Update vintage tag
+      description: >-
+        Update a vintage tag for a revision of a time series. Vintage tag is a
+        human-friendly label assigned to datetime when revision was recorded.
+        Vintages are unique within the collection
+      operationId: app.api.vintages.put
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - name: name
+          description: vintage tag
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: vintage tag
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VintageUpdate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VintageSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space or collection not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/vintage/{space_name}/{coll_name}/{name}/history':
+    get:
+      tags:
+        - vintage
+      summary: Retrieve a vintage tag with metadata
+      description: Retrieve a vintage tag with metadata
+      operationId: app.api.vintages.name_history
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - name: name
+          description: vintage tag
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >-
+            List of vid's which were associated with a given vintage name in a
+            given collection
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/vid'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space or collection or tag not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/annotation/{space_name}/{coll_name}':
+    get:
+      tags:
+        - annotations
+      summary: List annotations
+      description: List annotations
+      operationId: app.api.annotation.get_list
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Annotation'
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    post:
+      tags:
+        - annotations
+      summary: Create an annotation
+      description: ''
+      operationId: app.api.annotation.create
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+      requestBody:
+        description: Annotation
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Annotation'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annotation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection/annotation not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/annotation/{space_name}/{coll_name}/{symbol}':
+    get:
+      tags:
+        - annotations
+      summary: Get an annotation
+      description: ''
+      operationId: app.api.annotation.get
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/symbol'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annotation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection/annotation not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    put:
+      tags:
+        - annotations
+      summary: Update an annotation
+      description: ''
+      operationId: app.api.annotation.update
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/symbol'
+      requestBody:
+        description: Annotation
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotationUpdate'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection/annotation not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    delete:
+      tags:
+        - annotations
+      summary: Delete annotation
+      description: ''
+      operationId: app.api.annotation.delete
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/symbol'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection/annotation not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  '/annotation/{space_name}/{coll_name}/{symbol}/targets':
+    post:
+      tags:
+        - annotations
+      summary: Add observation target
+      description: Add observation target
+      operationId: app.api.annotation.add_target
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/symbol'
+        - $ref: '#/components/parameters/tsid_optional'
+        - $ref: '#/components/parameters/index_optional'
+        - $ref: '#/components/parameters/freq_optional'
+        - $ref: '#/components/parameters/vid_optional'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annotation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection/annotation not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+    delete:
+      tags:
+        - annotations
+      summary: delete observation targets
+      description: delete observation targets
+      operationId: app.api.annotation.remove_target
+      parameters:
+        - $ref: '#/components/parameters/space_name'
+        - $ref: '#/components/parameters/coll_name'
+        - $ref: '#/components/parameters/symbol'
+        - $ref: '#/components/parameters/tsid_optional'
+        - $ref: '#/components/parameters/index_optional'
+        - $ref: '#/components/parameters/freq_optional'
+        - $ref: '#/components/parameters/vid_optional'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annotation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: space/collection/annotation not found
+      security:
+        - basic: []
+        - api_key: []
+        - jwt: []
+  /user:
+    post:
+      tags:
+        - user
+      summary: Create user
+      description: This can only be done by the logged in user.
+      operationId: app.api.user.create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPost'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      security:
+        - api_key:
+            - user
+        - jwt: []
+    get:
+      tags:
+        - user
+      summary: List users
+      description: list users
+      operationId: app.api.user.list_users
+      parameters:
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid username supplied
+        '404':
+          description: User not found
+      security:
+        - api_key:
+            - user
+        - jwt: []
+  /user/login:
+    get:
+      tags:
+        - user
+      summary: Logs user into the system and get JWT
+      description: Logs user into the system and get JWT
+      operationId: app.api.user.login
+      responses:
+        '200':
+          description: User summary and JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - basic: []
+  /user/logout:
+    get:
+      tags:
+        - user
+      summary: Logs out current logged in user session
+      description: ''
+      operationId: app.api.user.logout
+      parameters: []
+      responses:
+        default:
+          description: OK
+      security:
+        - jwt: []
+  /user/refresh:
+    post:
+      tags:
+        - user
+      summary: Refresh user session
+      description: Refresh user session; get new token
+      operationId: app.api.user.refresh
+      parameters: []
+      responses:
+        '200':
+          description: User summary and JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+      security:
+        - jwt: []
+  /user/ping:
+    get:
+      tags:
+        - user
+      summary: checks user authorization
+      description: checks user authorization
+      operationId: app.api.user.ping
+      parameters: []
+      responses:
+        default:
+          description: OK
+      security:
+        - jwt: []
+  '/user/{username}':
+    get:
+      tags:
+        - user
+      summary: Get user by user name
+      description: Get user by user name
+      operationId: app.api.user.get
+      parameters:
+        - $ref: '#/components/parameters/username_path'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid username supplied
+        '404':
+          description: User not found
+      security:
+        - api_key:
+            - user
+        - jwt: []
+    put:
+      tags:
+        - user
+      summary: Updated user
+      description: This can only be done by the logged in user.
+      operationId: app.api.user.update
+      parameters:
+        - $ref: '#/components/parameters/username_path'
+      requestBody:
+        description: Updated user object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid user supplied
+        '404':
+          description: User not found
+      security:
+        - api_key:
+            - user
+        - jwt: []
+    delete:
+      tags:
+        - user
+      summary: Delete user
+      description: This can only be done by the logged in user.
+      operationId: app.api.user.delete
+      parameters:
+        - $ref: '#/components/parameters/username_path'
+      responses:
+        '400':
+          description: Invalid username supplied
+        '404':
+          description: User not found
+      security:
+        - api_key:
+            - user
+        - jwt: []
+  '/user/{username}/change_password':
+    put:
+      tags:
+        - user
+      summary: Change password.
+      description: Change password. Authentication via password only.
+      operationId: app.api.user.change_password
+      parameters:
+        - $ref: '#/components/parameters/username_path'
+      requestBody:
+        description: new password
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPassword'
+      responses:
+        '200':
+          description: ok
+        '400':
+          description: Invalid password
+        '404':
+          description: User not found
+      security:
+        - basic: []
+  /group:
+    get:
+      tags:
+        - group
+      summary: List groups
+      description: List groups
+      operationId: app.api.group.list_groups
+      parameters:
+        - $ref: '#/components/parameters/query'
+      responses:
+        '200':
+          description: a list of member's groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+    post:
+      tags:
+        - group
+      summary: Create a new group
+      description: Create a new group
+      operationId: app.api.group.create_group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        '201':
+          description: a group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: Group already exists
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+  '/group/{groupname}':
+    get:
+      tags:
+        - group
+      summary: Retrieve a group
+      description: Retrieve a group
+      operationId: app.api.group.get_group
+      parameters:
+        - $ref: '#/components/parameters/groupname_path'
+      responses:
+        '200':
+          description: a group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: group not found
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+    put:
+      tags:
+        - group
+      summary: Update a group
+      description: Update a group
+      operationId: app.api.group.update_group
+      parameters:
+        - $ref: '#/components/parameters/groupname_path'
+      requestBody:
+        description: an updated group
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        '200':
+          description: a group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: group not found
+        '405':
+          description: Invalid input
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+    delete:
+      tags:
+        - group
+      summary: Delete a group
+      description: Delete a group
+      operationId: app.api.group.delete_group
+      parameters:
+        - $ref: '#/components/parameters/groupname_path'
+      responses:
+        '200':
+          description: ok
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: group not found
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+  '/group/{groupname}/history':
+    get:
+      tags:
+        - group
+      summary: Retrieve historical values of group details
+      description: Retrieve historical values of group details
+      operationId: app.api.group.name_history
+      parameters:
+        - $ref: '#/components/parameters/groupname_path'
+        - $ref: '#/components/parameters/realStart'
+        - $ref: '#/components/parameters/realEnd'
+      responses:
+        '200':
+          description: list of historical values of group details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupHistorical'
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Group not found
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+  '/group/{groupname}/members':
+    post:
+      tags:
+        - group
+      summary: Add a group member
+      description: Add a group member
+      operationId: app.api.group.add_member
+      parameters:
+        - $ref: '#/components/parameters/groupname_path'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupMemberPost'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Group/member not found
+        '409':
+          description: User/group is already a member
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+  '/group/{groupname}/members/{type}/{memberName}':
+    delete:
+      tags:
+        - group
+      summary: Delete a group member
+      description: Delete a group member
+      operationId: app.api.group.delete_member
+      parameters:
+        - $ref: '#/components/parameters/groupname_path'
+        - $ref: '#/components/parameters/subject_type_path'
+        - name: memberName
+          in: path
+          description: username or groupname
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Group/member not found
+      security:
+        - basic: []
+        - api_key:
+            - group
+        - jwt: []
+  '/user/{username}/apikey':
+    post:
+      tags:
+        - api key
+      summary: Create API Key
+      description: Create API Key
+      operationId: app.api.api_key.create
+      parameters:
+        - $ref: '#/components/parameters/username_path'
+        - name: name
+          in: query
+          description: friendly name to display
+          required: true
+          schema:
+            $ref: '#/components/schemas/APIKeyName'
+        - name: scopes
+          in: query
+          description: api key scopes
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: expiresIn
+          in: query
+          description: number of days to expiry
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 365
+      responses:
+        '201':
+          description: A new API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKey'
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+      security:
+        - basic: []
+        - api_key:
+            - user
+        - jwt: []
+    get:
+      tags:
+        - api key
+      summary: List API Keys
+      description: List API Keys
+      operationId: app.api.api_key.get_list
+      parameters:
+        - $ref: '#/components/parameters/username_path'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/APIKey'
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+      security:
+        - basic: []
+        - api_key:
+            - user
+        - jwt: []
+  '/user/{username}/apikey/{name}':
+    delete:
+      tags:
+        - api key
+      summary: Delete API Key
+      description: Delete API Key
+      operationId: app.api.api_key.delete
+      parameters:
+        - $ref: '#/components/parameters/username_path'
+        - name: name
+          in: path
+          description: api key name
+          required: true
+          schema:
+            $ref: '#/components/schemas/APIKeyName'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+      security:
+        - basic: []
+        - api_key:
+            - user
+        - jwt: []
+components:
+  parameters:
+    space_name:
+      name: space_name
+      description: space name
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/SpaceName'
+    coll_name:
+      name: coll_name
+      description: collection name
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/CollectionName'
+    name:
+      name: name
+      description: a single series name
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/TSName'
+    names:
+      name: names
+      description: list of series names
+      in: query
+      required: true
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/TSName'
+    username_path:
+      name: username
+      description: username
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Username'
+    groupname_path:
+      name: groupname
+      description: groupname
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Groupname'
+    id_query:
+      name: id
+      description: id
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/id'
+    id_path:
+      name: id
+      description: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/id'
+    spaceId:
+      name: spaceId
+      description: space id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/id'
+    space_id:
+      name: space_id
+      description: space id
+      in: query
+      schema:
+        $ref: '#/components/schemas/id'
+    collId:
+      name: collId
+      description: collection id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/id'
+    coll_id:
+      name: coll_id
+      description: collection id
+      in: query
+      schema:
+        $ref: '#/components/schemas/id'
+    tsid:
+      name: tsid
+      description: time series id
+      in: query
+      schema:
+        $ref: '#/components/schemas/id'
+    tsid_optional:
+      name: tsid
+      description: time series id
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/id'
+        nullable: true
+    tsids_optional:
+      name: tsids
+      description: array of time series id
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/id'
+        nullable: true
+    freq_optional:
+      name: freq
+      description: frequency
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Frequency'
+        nullable: true
+    vid_optional:
+      name: vid
+      description: vintage id
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/vid'
+        nullable: true
+    uid:
+      name: uid
+      description: user id
+      in: query
+      schema:
+        $ref: '#/components/schemas/id'
+    uid_path:
+      name: uid
+      description: user id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/id'
+    gid:
+      name: gid
+      description: group id
+      in: query
+      schema:
+        $ref: '#/components/schemas/id'
+    gid_path:
+      name: gid
+      in: path
+      description: The group's unique id.
+      required: true
+      schema:
+        $ref: '#/components/schemas/id'
+    upload_id_path:
+      name: upload_id
+      in: path
+      description: upload_id
+      required: true
+      schema:
+        $ref: '#/components/schemas/id'
+    since_query:
+      name: since
+      in: query
+      description: since
+      schema:
+        type: string
+        format: date-time
+        nullable: true
+    obj_type:
+      name: obj_type
+      description: object
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/ObjectType'
+    subject_type:
+      name: type
+      description: '| format of output type * `u` user, * `g` group '
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+          - u
+          - g
+    subject_type_path:
+      name: type
+      description: '| format of output type * `u` user, * `g` group '
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - u
+          - g
+    subobject:
+      name: subobject
+      description: subobject mark
+      in: query
+      required: true
+      schema:
+        type: boolean
+    effect:
+      name: effect
+      description: permission effect
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+          - allow
+          - deny
+    action:
+      name: action
+      description: action can be Verb or Role
+      in: query
+      required: true
+      schema:
+        type: string
+    Index:
+      name: index
+      description: time series index
+      in: query
+      required: true
+      schema:
+        type: array
+        items:
+          type: integer
+    index_optional:
+      name: index
+      description: time series index
+      in: query
+      required: false
+      schema:
+        type: integer
+    realtime_optional:
+      name: realtime
+      description: realtime when values were valid
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+        nullable: true
+    realStart:
+      name: realStart
+      description: start time from when values were valid
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+        nullable: true
+    realEnd:
+      name: realEnd
+      description: end time until when values were valid
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+        nullable: true
+    sort:
+      name: sort
+      description: sort order
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+    query:
+      name: query
+      description: Search query
+      in: query
+      required: false
+      schema:
+        type: string
+    limit:
+      name: limit
+      description: the number of items to return
+      in: query
+      required: false
+      schema:
+        type: number
+    offset:
+      name: offset
+      description: the first number of item to skip
+      in: query
+      required: false
+      schema:
+        type: number
+    member_id_query:
+      name: member
+      description: a member of group/space/collection/etc.
+      in: query
+      required: false
+      schema:
+        type: string
+        pattern: '^([ug]):([0-9a-fA-F]{24})$'
+    own_only_query:
+      name: ownOnly
+      description: ownOnly
+      in: query
+      required: false
+      schema:
+        type: boolean
+    visibility_query:
+      name: visibility
+      description: visibility
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Visibility'
+    public_query:
+      name: public
+      description: public items only
+      in: query
+      required: false
+      schema:
+        type: boolean
+    page:
+      name: page
+      description: Number of pages returned
+      in: query
+      schema:
+        type: integer
+    pageSize:
+      name: pageSize
+      description: number of items per page
+      in: query
+      schema:
+        type: integer
+    aid:
+      name: aid
+      description: annotation id
+      in: path
+      required: true
+      schema:
+        type: string
+    symbol:
+      name: symbol
+      description: annotation symbol
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Symbol'
+  schemas:
+    AnyValue:
+      nullable: true
+    id:
+      type: string
+      pattern: '[0-9a-fA-F]{24}'
+    space_id:
+      $ref: '#/components/schemas/id'
+      description: space id
+    coll_id:
+      $ref: '#/components/schemas/id'
+      description: collection id
+    tsid:
+      $ref: '#/components/schemas/id'
+      description: timeseries id
+    aid:
+      $ref: '#/components/schemas/id'
+      description: annotation id
+    vid:
+      $ref: '#/components/schemas/id'
+      description: vintage id
+    Username:
+      type: string
+      pattern: '^[a-zA-Z][_a-zA-Z0-9]{4,59}$'
+    Groupname:
+      type: string
+      pattern: '^[a-zA-Z][_a-zA-Z0-9]{4,59}$'
+    SpaceName:
+      type: string
+      pattern: '^[a-zA-Z][_a-zA-Z0-9]{4,59}$'
+    CollectionName:
+      type: string
+      pattern: '^[a-zA-Z][_a-zA-Z0-9]{4,59}$'
+    TSName:
+      description: unique series name in a collection
+      type: string
+      pattern: '^[a-zA-Z][_a-zA-Z0-9]{0,59}$'
+    Symbol:
+      description: annotation symbol
+      type: string
+      pattern: '^[0-9a-zA-Z]{1,10}$'
+    APIKeyName:
+      type: string
+      pattern: '^[a-zA-Z][_a-zA-Z0-9]{0,59}$'
+    Visibility:
+      type: string
+      enum:
+        - public
+        - private
+    Space:
+      type: object
+      properties:
+        spaceId:
+          $ref: '#/components/schemas/space_id'
+          readOnly: true
+        name:
+          $ref: '#/components/schemas/SpaceName'
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        members:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/Member'
+        realStart:
+          type: string
+          format: date-time
+          readOnly: true
+        realEnd:
+          type: string
+          format: date-time
+          readOnly: true
+    SpaceSummary:
+      type: object
+      properties:
+        spaceId:
+          $ref: '#/components/schemas/space_id'
+          readOnly: true
+        name:
+          $ref: '#/components/schemas/SpaceName'
+        title:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+    SpaceHistorical:
+      type: object
+      readOnly: true
+      properties:
+        spaceId:
+          $ref: '#/components/schemas/space_id'
+        name:
+          $ref: '#/components/schemas/SpaceName'
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+        realStart:
+          type: string
+          format: date-time
+        realEnd:
+          type: string
+          format: date-time
+    CollectionSummary:
+      type: object
+      properties:
+        collId:
+          $ref: '#/components/schemas/coll_id'
+          readOnly: true
+        name:
+          $ref: '#/components/schemas/CollectionName'
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+    Collection:
+      type: object
+      properties:
+        collId:
+          $ref: '#/components/schemas/coll_id'
+          readOnly: true
+        name:
+          $ref: '#/components/schemas/CollectionName'
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionPermission'
+        realStart:
+          type: string
+          format: date-time
+          readOnly: true
+        realEnd:
+          type: string
+          format: date-time
+          readOnly: true
+    CollectionHistorical:
+      type: object
+      readOnly: true
+      properties:
+        collId:
+          $ref: '#/components/schemas/coll_id'
+        name:
+          $ref: '#/components/schemas/CollectionName'
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionPermission'
+        realStart:
+          type: string
+          format: date-time
+        realEnd:
+          type: string
+          format: date-time
+    TSI:
+      description: >-
+        Time Series Identifier, it uniquely identifies time series in the
+        database.
+      type: object
+      properties:
+        tsi:
+          $ref: '#/components/schemas/TSIString'
+        space:
+          $ref: '#/components/schemas/SpaceName'
+        collection:
+          $ref: '#/components/schemas/CollectionName'
+        name:
+          $ref: '#/components/schemas/TSName'
+    TSIString:
+      description: >-
+        Time Series Identifier as a string where ts name, collection name and
+        space name as separated by comma
+      type: string
+      pattern: >-
+        ^[a-zA-Z][_a-zA-Z0-9]{0,59}.[a-zA-Z][_a-zA-Z0-9]{4,60}.[a-zA-Z][_a-zA-Z0-9]{4,60}$
+      minLength: 1
+      example: abcdefg.dfds_dfasd.dfsd_dsfdfds
+    TSIQuery:
+      description: Time series query with option to filter by attribute
+      type: object
+      properties:
+        query:
+          description: ''
+          type: string
+          example:
+            - xyz.coll1.space1
+            - xy*.coll2.space3
+        attributes:
+          type: object
+          properties: {}
+    TSIList:
+      type: array
+      items:
+        $ref: '#/components/schemas/TSIString'
+    TimeSeriesCore:
+      description: Immutable part of time series definition
+      type: object
+      properties:
+        tsid:
+          $ref: '#/components/schemas/tsid'
+          readOnly: true
+        collId:
+          $ref: '#/components/schemas/coll_id'
+          readOnly: true
+        dtype:
+          $ref: '#/components/schemas/DType'
+        dparams:
+          description: 'parameters of data type, e.g. enum'
+          type: object
+          properties: {}
+          example:
+            enum:
+              '0': not really
+              '1': somewhat
+              '2': totally
+            ordered: true
+        itype:
+          $ref: '#/components/schemas/IType'
+        freq:
+          $ref: '#/components/schemas/Frequency'
+        fparams:
+          description: >-
+            parameters of time index type, e.g. time zone if applicable, pivot
+            date, etc
+          type: object
+          properties: {}
+        entity:
+          description: >-
+            Entity is used in panel data to associate time series with a unit or
+            individual, e.g. household or company, etc. It is used together with
+            variable name to create a unique reference to time series in a panel
+            collection, (entity, variable). Entity is immutable
+          type: integer
+        variable:
+          description: >-
+            variable is used in panel data to associate time series with a
+            cross-sectional measure, e.g. eye color, etc. It is used together
+            with variable name to create a unique reference to time series in a
+            panel collection, (entity, variable). Variable is immutable
+          type: string
+          pattern: '^[a-zA-Z0-9]{6,60}$'
+    TimeSeriesSummary:
+      description: returned when listing time series
+      allOf:
+        - $ref: '#/components/schemas/TimeSeriesCore'
+        - $ref: '#/components/schemas/TSI'
+        - type: object
+          properties:
+            title:
+              description: Title of time series
+              type: string
+              example: Unemployment Rate
+            discontinued:
+              description: >-
+                Time series, which are no longer recorded can be marked as
+                discontinued. Discontinued series can be kept in the database
+                for historical reasons
+              type: boolean
+              example: false
+            unit:
+              description: units of values
+              type: object
+              properties: {}
+              example:
+                - currency: USD
+                - anchor: 2010-Q1
+                - scale: 1000
+    TimeSeriesUpdate:
+      description: >-
+        Time Series properties, which can be updated. All others are mutable.
+        Used in time series update
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/TSName'
+        unit:
+          description: units of values
+          type: object
+          properties: {}
+          example:
+            - currency: USD
+            - anchor: 2010-Q1
+            - scale: 1000
+        title:
+          description: Title of time series
+          type: string
+          example: Unemployment Rate
+        description:
+          description: Detail description of time series
+          type: string
+          example: >-
+            The unemployment rate represents the number of unemployed as a
+            percentage of the labor force. Labor force data are restricted to
+            people 16 years of age and older, who currently reside in 1 of the
+            50 states or the District of Columbia, who do not reside in
+            institutions (e.g., penal and mental facilities, homes for the
+            aged), and who are not on active duty in the Armed Forces.
+        discontinued:
+          description: >-
+            Time series, which are no longer recorded can be marked as
+            discontinued. Discontinued series can be kept in the database for
+            historical reasons
+          type: boolean
+          example: false
+        legend:
+          description: >-
+            Legend for observation status; it maps integer to a status string,
+            e.g. 1 -> preliminary, 2-> projected, etc.
+          type: object
+          properties: {}
+          example:
+            '0': missing
+            '1': preliminary
+            '2': projected
+        attributes:
+          description: >-
+            Time series attributes are key-value pairs used to store meta
+            information about the series, e.g. location, region, category, etc.
+            Note that units and discontinued properties are explicitly 
+          type: object
+          properties: {}
+          example:
+            region: Europe
+            country: Germany
+    TimeSeries:
+      description: 'Full definition of time series, used to create a  new time series'
+      allOf:
+        - $ref: '#/components/schemas/TimeSeriesCore'
+        - $ref: '#/components/schemas/TSI'
+        - $ref: '#/components/schemas/TimeSeriesUpdate'
+        - type: object
+          properties:
+            realStart:
+              type: string
+              format: date-time
+              readOnly: true
+            realEnd:
+              type: string
+              format: date-time
+              readOnly: true
+    TimeSeriesHistorical:
+      description: Historical definition of time series
+      allOf:
+        - $ref: '#/components/schemas/TimeSeriesCore'
+        - $ref: '#/components/schemas/TSI'
+        - $ref: '#/components/schemas/TimeSeriesUpdate'
+        - type: object
+          properties:
+            realStart:
+              description: time when the time series definition is valid from
+              type: string
+              format: date-time
+            realEnd:
+              description: time when the time series definition is valid until
+              type: string
+              format: date-time
+    RawSingleTimeSeriesData:
+      description: 'Raw Single time series data, internal use only'
+      properties:
+        tsid:
+          $ref: '#/components/schemas/tsid'
+        collId:
+          $ref: '#/components/schemas/coll_id'
+        name:
+          description: time series unique name in a collection
+          type: string
+        nobs:
+          description: number of observations
+          type: integer
+          minimum: 0
+        index:
+          type: array
+          items:
+            type: integer
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnyValue'
+        status:
+          type: array
+          nullable: true
+          items:
+            type: integer
+            nullable: true
+        indexFormat:
+          $ref: '#/components/schemas/RawIndexFormat'
+        dtype:
+          $ref: '#/components/schemas/DType'
+        dparams:
+          type: object
+        itype:
+          $ref: '#/components/schemas/IType'
+        freq:
+          $ref: '#/components/schemas/Frequency'
+        fparams:
+          type: object
+        vintage:
+          type: object
+          nullable: true
+          properties:
+            vid:
+              $ref: '#/components/schemas/vid'
+              readOnly: true
+            realtime:
+              type: string
+              format: date-time
+            name:
+              type: string
+    RawIndexFormat:
+      description: |
+        Format of data time index
+        * `s`   a number of seconds from unix epoch 1970-01-01
+        * `ms`  a number of milliseconds from unix epoch 1970-01-01
+        * `us`  a number of microseconds from unix epoch 1970-01-01
+      type: string
+      enum:
+        - s
+        - ms
+        - us
+      default: us
+    RawDataPutRequest:
+      type: object
+      properties:
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawSingleTimeSeriesData'
+        vintage:
+          $ref: '#/components/schemas/VintageUpdate'
+    RawDataPutResponse:
+      description: Successful data write for a list of series
+      properties:
+        series:
+          type: array
+          items:
+            type: object
+            properties:
+              collId:
+                $ref: '#/components/schemas/coll_id'
+              tsid:
+                $ref: '#/components/schemas/tsid'
+        vintage:
+          $ref: '#/components/schemas/VintageSummary'
+    Observation:
+      type: object
+      properties:
+        index:
+          $ref: '#/components/schemas/AnyValue'
+        value:
+          $ref: '#/components/schemas/AnyValue'
+        status:
+          type: integer
+    ObservationHistorical:
+      type: object
+      properties:
+        obsId:
+          type: string
+        index:
+          $ref: '#/components/schemas/AnyValue'
+        value:
+          $ref: '#/components/schemas/AnyValue'
+        status:
+          type: integer
+        realStart:
+          type: string
+          format: date-time
+        realEnd:
+          type: string
+          format: date-time
+    SingleTimeSeriesData:
+      description: Single time series data
+      properties:
+        tsid:
+          $ref: '#/components/schemas/tsid'
+        collId:
+          $ref: '#/components/schemas/coll_id'
+        name:
+          description: time series unique name in a collection
+          type: string
+        nobs:
+          description: number of observations
+          type: integer
+          minimum: 0
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Observation'
+        index:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnyValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnyValue'
+        status:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnyValue'
+        format:
+          description: >
+            Format of time series is json
+
+            * `split`    uses array in properties 'index', 'values', 'status'
+            with item for each observation
+
+            * `obs`  uses an array of objects with index, value, status,
+            annotation
+          type: string
+          enum:
+            - split
+            - obs
+          example: split
+          default: split
+        indexFormat:
+          $ref: '#/components/schemas/IndexFormat'
+        dtype:
+          $ref: '#/components/schemas/DType'
+        dparams:
+          type: object
+        itype:
+          $ref: '#/components/schemas/IType'
+        freq:
+          $ref: '#/components/schemas/Frequency'
+        fparams:
+          type: object
+    IndexFormat:
+      description: |
+        Format of data time index
+        * `iso` a string with iso representation of datetime ''
+        * `s`   a number of seconds from unix epoch 1970-01-01
+        * `ms`  a number of milliseconds from unix epoch 1970-01-01
+        * `us`  a number of microseconds from unix epoch 1970-01-01
+      type: string
+      enum:
+        - iso
+        - s
+        - ms
+        - us
+    RealIndexFormat:
+      description: >
+        Real index format used to refer to revision time, real time
+
+        * `iso` a string with iso representation of datetime,
+        'YYYY-MM-DDTHH:MM:SS.ffffff', 'YYYY-MM-DDTHH:MM:SS'
+
+        * `s`   a number of seconds from unix epoch 1970-01-01
+
+        * `ms`  a number of milliseconds from unix epoch 1970-01-01
+      type: string
+      enum:
+        - iso
+        - s
+        - ms
+      example: iso
+    DType:
+      description: |
+        Data type, observation value type
+        * `int`     integer 64bits
+        * `float`   double, float 64 bits
+        * `bool`      Boolean
+        * `cat`       Categorical variable
+                      dparams has to contain, enum: mapping int(string represented) -> string, and ordered: true/false
+      type: string
+      enum:
+        - int
+        - float
+        - bool
+        - cat
+      example: int
+    IType:
+      description: |
+        index type
+        * `p`  period, Annual, Quarterly, ..., Daily
+        * `t` timestamp, date with time
+        * `r` relative, integer referring to periods from an anchor point
+        * `i` integer
+      type: string
+      enum:
+        - p
+        - t
+        - r
+        - i
+      default: p
+      example: p
+    Frequency:
+      description: |
+        Time series frequency
+        * `A`      Annual = `A-DEC`
+        * `A-DEC`  Annual - December year end
+        * `A-JAN`  Annual - January year end
+        * `A-FEB`  Annual - February year end
+        * `A-MAR`  Annual - March year end
+        * `A-APR`  Annual - April year end
+        * `A-MAY`  Annual - May year end
+        * `A-JUN`  Annual - June year end
+        * `A-JUL`  Annual - July year end
+        * `A-AUG`  Annual - August year end
+        * `A-SEP`  Annual - September year end
+        * `A-OCT`  Annual - October year end
+        * `A-NOV`  Annual - November year end
+
+         Quarterly frequencies with various fiscal year ends.
+         eg, Q42005 for Q-OCT runs Aug 1, 2005 to Oct 31, 2005
+
+        * `Q`      Quarterly - December year end
+        * `Q-DEC`  Quarterly - December year end
+        * `Q-JAN`  Quarterly - January year end
+        * `Q-FEB`  Quarterly - February year end
+        * `Q-MAR`  Quarterly - March year end
+        * `Q-APR`  Quarterly - April year end
+        * `Q-MAY`  Quarterly - May year end
+        * `Q-JUN`  Quarterly - June year end
+        * `Q-JUL`  Quarterly - July year end
+        * `Q-AUG`  Quarterly - August year end
+        * `Q-SEP`  Quarterly - September year end
+        * `Q-OCT`  Quarterly - October year end
+        * `Q-NOV`  Quarterly - November year end
+
+        * `M`      Monthly
+
+        * `W`      Weekly - Sunday end of week
+        * `W-MON`  Weekly - Monday end of week
+        * `W-TUE`  Weekly - Tuesday end of week
+        * `W-WED`  Weekly - Wednesday end of week
+        * `W-THU`  Weekly - Thursday end of week
+        * `W-FRI`  Weekly - Friday end of week
+        * `W-SAT`  Weekly - Saturday end of week
+        * `W-SUN`  Weekly - Sunday end of week
+
+        * `B`  Business days
+        * `C`  Custom business day frequency
+        * `D`  Daily, calendar day frequency
+      type: string
+      enum:
+        - A
+        - A-JAN
+        - A-FEB
+        - A-MAR
+        - A-APR
+        - A-MAY
+        - A-JUN
+        - A-JUL
+        - A-AUG
+        - A-SEP
+        - A-OCT
+        - A-NOV
+        - Q
+        - Q-JAN
+        - Q-FEB
+        - Q-MAR
+        - Q-APR
+        - Q-MAY
+        - Q-JUN
+        - Q-JUL
+        - Q-AUG
+        - Q-SEP
+        - Q-OCT
+        - Q-NOV
+        - M
+        - W
+        - W-MON
+        - W-TUE
+        - W-WED
+        - W-THU
+        - W-FRI
+        - W-SAT
+        - B
+        - C
+        - D
+    RawDataDeleteResponse:
+      description: Successful data delete for a single series
+      properties:
+        collId:
+          $ref: '#/components/schemas/coll_id'
+        tsid:
+          $ref: '#/components/schemas/tsid'
+        realtime:
+          description: realtime until when the observations are valid
+          type: string
+          format: date-time
+    Vintage:
+      description: >-
+        Vintage tag is a label associated with a real time (valid time) in a
+        collection. 
+      type: object
+      properties:
+        coll_id:
+          description: collection id
+          type: string
+          readOnly: true
+        vid:
+          $ref: '#/components/schemas/vid'
+          readOnly: true
+        realtime:
+          type: string
+          format: date-time
+          readOnly: true
+        tsids:
+          description: 'array of time series id, which were saved in this vintage'
+          type: array
+          items:
+            type: string
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        realStart:
+          type: string
+          format: date-time
+          readOnly: true
+        realEnd:
+          type: string
+          format: date-time
+          readOnly: true
+    VintageSummary:
+      description: Vintage tag summary
+      type: object
+      readOnly: true
+      properties:
+        coll_id:
+          $ref: '#/components/schemas/coll_id'
+        vid:
+          $ref: '#/components/schemas/vid'
+        name:
+          type: string
+        description:
+          type: string
+        realtime:
+          type: string
+          format: date-time
+        realStart:
+          type: string
+          format: date-time
+        realEnd:
+          type: string
+          format: date-time
+        tsids:
+          description: 'array of time series id, which were saved in this vintage'
+          type: array
+          items:
+            type: string
+    VintageUpdate:
+      description: >-
+        Vintage tag is a label associated with a real time (valid time) in a
+        collection. 
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    VintageHistorical:
+      description: >-
+        Vintage tag is a label associated with a real time (valid time) in a
+        collection. 
+      type: object
+      readOnly: true
+      properties:
+        vid:
+          $ref: '#/components/schemas/vid'
+        name:
+          type: string
+        description:
+          type: string
+        realtime:
+          type: string
+          format: date-time
+        tsids:
+          description: 'array of time series id, which were saved in this vintage'
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        realStart:
+          description: time when the time series definition is valid from
+          type: string
+          format: date-time
+        realEnd:
+          description: time when the time series definition is valid until
+          type: string
+          format: date-time
+    AnnotationTarget:
+      description: Reference to observation in an annotation
+      properties:
+        tsid:
+          $ref: '#/components/schemas/tsid'
+          nullable: true
+        index:
+          description: index
+          type: integer
+          nullable: true
+        freq:
+          description: frequency
+          $ref: '#/components/schemas/Frequency'
+          nullable: true
+        real_start:
+          type: string
+          format: date-time
+          nullable: true
+    AnnotationTargetRequest:
+      description: Reference to observation in an annotation
+      properties:
+        tsid:
+          $ref: '#/components/schemas/tsid'
+        index:
+          description: index
+          type: integer
+        vid:
+          $ref: '#/components/schemas/vid'
+    Annotation:
+      description: >-
+        Annotation is a string containing additional information about
+        observations or series. It is like a footnote or note in a statistical
+        table.
+      type: object
+      properties:
+        coll_id:
+          $ref: '#/components/schemas/coll_id'
+          readOnly: true
+        aid:
+          $ref: '#/components/schemas/aid'
+          readOnly: true
+        symbol:
+          $ref: '#/components/schemas/Symbol'
+          nullable: true
+        text:
+          type: string
+        format:
+          type: string
+          enum:
+            - txt
+            - md
+        attributes:
+          description: >-
+            json-type object can be added to annotation to store some extra data
+            or metadata
+          type: object
+          additionalProperties: true
+        targets:
+          description: annotated targets
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnotationTarget'
+        realStart:
+          type: string
+          format: date-time
+          readOnly: true
+        realEnd:
+          type: string
+          format: date-time
+          readOnly: true
+    AnnotationSummary:
+      description: >-
+        Annotation is a string containing additional information about
+        observations or series. It is like a footnote or note in a statistical
+        table.
+      type: object
+      properties:
+        coll_id:
+          $ref: '#/components/schemas/coll_id'
+          readOnly: true
+        aid:
+          $ref: '#/components/schemas/aid'
+          readOnly: true
+        symbol:
+          $ref: '#/components/schemas/Symbol'
+        text:
+          type: string
+        format:
+          type: string
+          enum:
+            - txt
+            - md
+        targets:
+          description: annotated targets
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnotationTarget'
+        realStart:
+          type: string
+          format: date-time
+          readOnly: true
+        realEnd:
+          type: string
+          format: date-time
+          readOnly: true
+    AnnotationUpdate:
+      description: >-
+        AnnotationUpdate is a body used to is a string containing additional
+        information about observations or series. It is like a footnote or note
+        in a statistical table.
+      type: object
+      properties:
+        symbol:
+          $ref: '#/components/schemas/Symbol'
+        text:
+          type: string
+        format:
+          type: string
+          enum:
+            - txt
+            - md
+        attributes:
+          description: >-
+            json-type object can be added to annotation to store some extra data
+            or metadata
+          type: object
+          additionalProperties: true
+    AnnotationHistorical:
+      description: Historical annotation
+      type: object
+      readOnly: true
+      properties:
+        coll_id:
+          $ref: '#/components/schemas/coll_id'
+          readOnly: true
+        aid:
+          $ref: '#/components/schemas/aid'
+          readOnly: true
+        symbol:
+          $ref: '#/components/schemas/Symbol'
+        text:
+          type: string
+        format:
+          type: string
+        attributes:
+          description: >-
+            json-type object can be added to annotation to store some extra data
+            or metadata
+          type: object
+          additionalProperties: true
+        targets:
+          description: annotated targets
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnotationTarget'
+        deleted:
+          description: time when the time series definition is valid from
+          type: boolean
+        realStart:
+          description: time when the time series definition is valid from
+          type: string
+          format: date-time
+        realEnd:
+          description: time when the time series definition is valid until
+          type: string
+          format: date-time
+    User:
+      description: User
+      type: object
+      properties:
+        uid:
+          $ref: '#/components/schemas/id'
+          readOnly: true
+        username:
+          $ref: '#/components/schemas/Username'
+        firstName:
+          description: First name
+          type: string
+          nullable: false
+        lastName:
+          description: Last name
+          type: string
+          nullable: false
+        email:
+          description: Email
+          type: string
+          format: email
+    UserUpdate:
+      description: Update User
+      type: object
+      properties:
+        username:
+          $ref: '#/components/schemas/Username'
+        firstName:
+          description: First name
+          type: string
+          nullable: false
+        lastName:
+          description: Last name
+          type: string
+          nullable: false
+        email:
+          description: Email
+          type: string
+          format: email
+          nullable: false
+    UserPost:
+      description: New User
+      allOf:
+        - $ref: '#/components/schemas/UserUpdate'
+        - type: object
+          properties:
+            password:
+              description: Password
+              type: string
+            is_admin:
+              type: boolean
+              nullable: true
+            can_create_space:
+              type: boolean
+              nullable: true
+            can_create_group:
+              type: boolean
+              nullable: true
+    UserSummary:
+      type: object
+      properties:
+        uid:
+          $ref: '#/components/schemas/id'
+        username:
+          $ref: '#/components/schemas/Username'
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        uid:
+          $ref: '#/components/schemas/id'
+        username:
+          $ref: '#/components/schemas/Username'
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        jwt:
+          type: string
+    NewPassword:
+      type: object
+      properties:
+        password:
+          description: Password
+          type: string
+          format: password
+    Group:
+      type: object
+      properties:
+        gid:
+          $ref: '#/components/schemas/id'
+          readOnly: true
+        groupname:
+          $ref: '#/components/schemas/Groupname'
+        email:
+          type: string
+          format: email
+        description:
+          type: string
+        organization:
+          type: string
+        location:
+          type: string
+        website:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        members:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/Member'
+    GroupUpdate:
+      type: object
+      properties:
+        groupname:
+          type: string
+        email:
+          type: string
+          format: email
+        description:
+          type: string
+        organization:
+          type: string
+        location:
+          type: string
+        website:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+    GroupSummary:
+      type: object
+      properties:
+        gid:
+          $ref: '#/components/schemas/id'
+        groupname:
+          type: string
+        email:
+          type: string
+          format: email
+    GroupHistorical:
+      type: object
+      properties:
+        gid:
+          $ref: '#/components/schemas/id'
+        groupname:
+          $ref: '#/components/schemas/Groupname'
+        email:
+          type: string
+          format: email
+        description:
+          type: string
+        organization:
+          type: string
+        location:
+          type: string
+        website:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+        deleted:
+          description: time when the time series definition is valid from
+          type: boolean
+        realStart:
+          description: time when the time series definition is valid from
+          type: string
+          format: date-time
+        realEnd:
+          description: time when the time series definition is valid until
+          type: string
+          format: date-time
+    Member:
+      type: object
+      properties:
+        type:
+          description: |
+            member type:
+            `g` group
+            `u` user
+          type: string
+          enum:
+            - g
+            - u
+        id:
+          description: 'member id, either uid, or gid'
+          $ref: '#/components/schemas/id'
+        name:
+          description: username or groupname
+          type: string
+        email:
+          description: email
+          type: string
+        role:
+          description: >
+            member role:
+
+            `member` group member, who can see group info and members
+
+            `manager` group manager, who can add/remove members, and edit group
+            info
+
+            `owner` group owner, who can transfer ownership and delete the group
+
+            `annotator` space member, who can annotate data
+
+            `uploader` space member, who can write data
+
+            `analyst` space member, who can read/write data, read members
+
+            `maintainer` space maintainer, who can add/remove members, and edit
+            space info
+          type: string
+          enum:
+            - manager
+            - member
+            - owner
+            - annotator
+            - uploader
+            - analyst
+            - maintainer
+            - owner
+    GroupMemberPost:
+      type: object
+      properties:
+        type:
+          description: |
+            member type:
+            `g` group
+            `u` user
+          type: string
+          enum:
+            - g
+            - u
+        id:
+          description: 'member id, either uid, or gid'
+          $ref: '#/components/schemas/id'
+        role:
+          description: >
+            member role:
+
+            `member` group member, who can see group info and members
+
+            `manager` group manager, who can add/remove members, and edit group
+            info
+
+            `owner` group owner, who can transfer ownership and delete the group
+          type: string
+          enum:
+            - manager
+            - member
+            - owner
+    SpaceMemberPost:
+      type: object
+      properties:
+        type:
+          description: |
+            member type:
+            `g` group
+            `u` user
+          type: string
+          enum:
+            - g
+            - u
+        id:
+          description: 'member id, either uid, or gid'
+          $ref: '#/components/schemas/id'
+        role:
+          description: >
+            member role:
+
+            `annotator` space member, who can annotate data
+
+            `uploader` space member, who can write data
+
+            `analyst` space member, who can read/write data, read members
+
+            `maintainer` space maintainer, who can add/remove members, and edit
+            space info
+
+            `owner` space owner, who can transfer ownership and delete the space
+          type: string
+          enum:
+            - annotator
+            - uploader
+            - analyst
+            - maintainer
+            - owner
+    CollectionPermission:
+      type: object
+      properties:
+        type:
+          description: |
+            member type:
+            `g` group
+            `u` user
+          type: string
+          enum:
+            - g
+            - u
+        id:
+          description: 'member id, either uid, or gid'
+          $ref: '#/components/schemas/id'
+        name:
+          description: username or groupname
+          type: string
+        email:
+          description: email
+          type: string
+        role:
+          description: >
+            roles:
+
+            `annotator` space member, who can annotate data
+
+            `uploader` space member, who can write data
+
+            `analyst` space member, who can read/write data, read members
+
+            `maintainer` space maintainer, who can add/remove members, and edit
+            space info
+          type: string
+          enum:
+            - annotator
+            - uploader
+            - analyst
+            - maintainer
+        effect:
+          type: string
+          enum:
+            - allow
+            - deny
+    CollectionPermissionPost:
+      type: object
+      properties:
+        type:
+          description: |
+            member type:
+            `g` group
+            `u` user
+          type: string
+          enum:
+            - g
+            - u
+        id:
+          description: 'member id, either uid, or gid'
+          $ref: '#/components/schemas/id'
+        role:
+          description: >
+            member role:
+
+            `annotator` space member, who can annotate data
+
+            `uploader` space member, who can write data
+
+            `analyst` space member, who can read/write data, read members
+
+            `maintainer` space maintainer, who can add/remove members, and edit
+            space info
+          type: string
+          enum:
+            - annotator
+            - uploader
+            - analyst
+            - maintainer
+        effect:
+          type: string
+          enum:
+            - allow
+            - deny
+    SubjectType:
+      type: string
+      enum:
+        - u
+        - g
+    ObjectType:
+      type: string
+      enum:
+        - s
+        - c
+        - t
+        - g
+    PolicyPath:
+      type: string
+      format: regex
+      pattern: >-
+        ^(?P<t1>[ugs]):(?P<id1>[0-9a-fA-F]{24})\/(c:(?P<coll_id>[0-9a-fA-F]{24})\/((?P<t2>[atv]):(?P<id2>[0-9a-fA-F]{24})\/)?)?(?P<wc>\*?)$
+    SpaceObj:
+      type: object
+      properties:
+        space_id:
+          $ref: '#/components/schemas/space_id'
+        name:
+          $ref: '#/components/schemas/SpaceName'
+      required:
+        - space_id
+        - name
+    CollectionObj:
+      type: object
+      properties:
+        coll_id:
+          $ref: '#/components/schemas/coll_id'
+        name:
+          $ref: '#/components/schemas/CollectionName'
+      required:
+        - coll_id
+        - name
+    TimeseriesObj:
+      type: object
+      properties:
+        tsid:
+          $ref: '#/components/schemas/tsid'
+        name:
+          $ref: '#/components/schemas/TSName'
+      required:
+        - tsid
+        - name
+    Subject:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SubjectType'
+        user:
+          $ref: '#/components/schemas/UserSummary'
+        group:
+          $ref: '#/components/schemas/GroupSummary'
+      required:
+        - type
+    Object:
+      type: object
+      properties:
+        space:
+          $ref: '#/components/schemas/SpaceObj'
+        collection:
+          $ref: '#/components/schemas/CollectionObj'
+        timeseries:
+          $ref: '#/components/schemas/TimeseriesObj'
+        type:
+          $ref: '#/components/schemas/ObjectType'
+        path:
+          $ref: '#/components/schemas/PolicyPath'
+          readOnly: true
+        subobject:
+          type: boolean
+      required:
+        - type
+        - path
+        - subobject
+    Action:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - v
+            - r
+        value:
+          type: string
+      required:
+        - type
+        - value
+    Effect:
+      type: string
+      enum:
+        - allow
+        - deny
+    Policy:
+      type: object
+      properties:
+        subject:
+          $ref: '#/components/schemas/Subject'
+        object:
+          $ref: '#/components/schemas/Object'
+        action:
+          $ref: '#/components/schemas/Action'
+        effect:
+          $ref: '#/components/schemas/Effect'
+      required:
+        - subject
+        - object
+        - action
+        - effect
+    SubjectUpdate:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SubjectType'
+        gid:
+          $ref: '#/components/schemas/id'
+        uid:
+          $ref: '#/components/schemas/id'
+      required:
+        - type
+    PolicyUpdate:
+      type: object
+      properties:
+        subject:
+          type: object
+          properties:
+            type:
+              $ref: '#/components/schemas/SubjectType'
+            gid:
+              $ref: '#/components/schemas/id'
+            uid:
+              $ref: '#/components/schemas/id'
+        object:
+          type: object
+          properties:
+            type:
+              $ref: '#/components/schemas/ObjectType'
+            space_id:
+              $ref: '#/components/schemas/space_id'
+            coll_id:
+              $ref: '#/components/schemas/coll_id'
+            tsid:
+              $ref: '#/components/schemas/tsid'
+            subobject:
+              type: boolean
+          required:
+            - type
+            - subobject
+        action:
+          $ref: '#/components/schemas/Action'
+        effect:
+          $ref: '#/components/schemas/Effect'
+      required:
+        - subject
+        - object
+        - action
+        - effect
+    UserPermissions:
+      type: object
+      properties:
+        is_admin:
+          type: boolean
+        can_create_space:
+          type: boolean
+        can_create_group:
+          type: boolean
+    UploadErrors:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        row:
+          type: number
+        column:
+          type: number
+    UploadMethod:
+      type: string
+      description: timeseries update method
+      enum:
+        - update
+        - append
+        - overwrite
+    Upload:
+      type: object
+      properties:
+        upload_id:
+          $ref: '#/components/schemas/id'
+        upload_url:
+          type: string
+        method:
+          description: estimation method
+          $ref: '#/components/schemas/UploadMethod'
+          type: string
+        description:
+          type: string
+        vintage_name:
+          type: string
+        filename:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: number
+        fileLastModified:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/UploadErrors'
+        updatedOn:
+          type: string
+          format: date-time
+        createdOn:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/UserSummary'
+        status:
+          description: status
+          type: string
+          enum:
+            - initiated
+            - uploading
+            - uploaded
+            - processing
+            - processed_successful
+            - processed_failed
+            - staging
+            - committed
+        vid:
+          description: vintage id
+          type: string
+    APIKey:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/APIKeyName'
+        key:
+          type: string
+          nullable: true
+        prefix:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        createdOn:
+          type: string
+          format: date-time
+        expiriesOn:
+          type: string
+          format: date-time
+          nullable: true
+  securitySchemes:
+    basic:
+      type: http
+      scheme: basic
+      x-basicInfoFunc: app.auth.basic.basic_auth
+    api_key:
+      type: apiKey
+      name: X-Auth
+      in: header
+      x-apikeyInfoFunc: app.auth.apikey.apikey_auth
+    jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: app.auth.jwt.jwt_auth
+  responses:
+    UnauthorizedError:
+      description: 'Invalid username/password, API key, or token'
+      headers:
+        WWW_Authenticate:
+          schema:
+            type: string
+    ForbiddenError:
+      description: You don’t have permission to access this resource
+    TSNotFoundError:
+      description: Time series not found error
+    TooManyRequests:
+      description: TOO MANY REQUESTS
+externalDocs:
+  description: Find out more about ChronosDB
+  url: 'https://www.chronosdb.io/docs/intro'
